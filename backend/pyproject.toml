@@ -1,7 +1,7 @@
 [project]
 name = "ouija-api"
 version = "0.1.0"
-description = "A real-time web chat service using WebSockets."
+description = "A real-time web chat service using FastAPI with WebSockets."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -12,6 +12,7 @@ dependencies = [
     "passlib>=1.7.4",
     "psycopg2-binary>=2.9.12",
     "pydantic>=2.13.3",
+    "pydantic-settings>=2.14.0",
     "pytest>=9.0.3",
     "python-dotenv>=1.2.2",
     "python-jose>=3.5.0",
