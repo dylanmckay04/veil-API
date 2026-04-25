@@ -8,6 +8,7 @@ _env_file = Path(__file__).resolve().parents[2] / ".env"
 class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
+    REDIS_URL: str
     
     model_config = ConfigDict(env_file = str(_env_file), extra="ignore")
 
