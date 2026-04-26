@@ -1,6 +1,5 @@
 # Environment
 .env
-.venv
 
 # Compile / Build Files
 *.pyc
