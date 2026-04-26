@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_db, get_current_user
 from app.core.limiter import limiter
 from app.models.user import User
-from app.schemas.auth import LoginRequest, TokenResponse, SocketTocketResponse
+from app.schemas.auth import LoginRequest, TokenResponse, SocketTokenResponse
 from app.schemas.user import UserCreate, UserResponse
 from backend.app.services.auth_service import register_user, login_user, issue_socket_tocken
 
@@ -33,11 +33,11 @@ async def login(
     return TokenResponse(access_token=access_token)
 
 
-@router.post("/socket-token", response_model=SocketTocketResponse)
+@router.post("/socket-token", response_model=SocketTokenResponse)
 @limiter.limit("30/minute")
 async def get_socket_token(
     request: Request,
     current_user: User = Depends(get_current_user),
 ):
     token, jti = await issue_socket_tocken(current_user)
-    return SocketTocketResponse(socket_token=token, jti=jti)
+    return SocketTokenResponse(socket_token=token, jti=jti)

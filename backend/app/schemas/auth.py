@@ -11,6 +11,6 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
-class SocketTocketResponse(BaseModel):
+class SocketTokenResponse(BaseModel):
     socket_token: str
     jti: str
