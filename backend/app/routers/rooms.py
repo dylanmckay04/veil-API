@@ -14,6 +14,7 @@ router = APIRouter(prefix="/rooms", tags=["rooms"])
 @router.post("", response_model=RoomResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("20/minute")
 async def create_room(
+    request: Request,
     payload: RoomCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -24,6 +25,7 @@ async def create_room(
 @router.get("", response_model=list[RoomResponse])
 @limiter.limit("60/minute")
 async def list_rooms(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -33,6 +35,7 @@ async def list_rooms(
 @router.get("/{room_id}", response_model=RoomDetail)
 @limiter.limit("60/minute")
 async def get_room(
+    request: Request,
     room_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -43,6 +46,7 @@ async def get_room(
 @router.post("/{room_id}/join", response_model=RoomMemberResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("30/minute")
 async def join_room(
+    request: Request,
     room_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -53,6 +57,7 @@ async def join_room(
 @router.delete("/{room_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("30/minute")
 async def leave_room(
+    request: Request,
     room_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -63,6 +68,7 @@ async def leave_room(
 @router.get("/{room_id}/members", response_model=list[RoomMemberResponse])
 @limiter.limit("60/minute")
 async def get_members(
+    request: Request,
     room_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -73,6 +79,7 @@ async def get_members(
 @router.delete("/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("10/minute")
 async def delete_room(
+    request: Request,
     room_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
