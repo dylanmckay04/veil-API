@@ -1,7 +1,14 @@
 from app.database import Base
-from app.models.user import User
-from app.models.room import Room
-from app.models.room_member import RoomMember, MemberRole
-from app.models.message import Message
+from app.models.seeker import Seeker
+from app.models.seance import Seance
+from app.models.presence import Presence, PresenceRole
+from app.models.whisper import Whisper
 
-__all__ = ["Base", "User", "Room", "Message"]
+__all__ = [
+    "Base",
+    "Seeker",
+    "Seance",
+    "Presence",
+    "PresenceRole",
+    "Whisper",
+]

@@ -1,5 +1,21 @@
-from app.schemas.user import UserCreate, UserResponse, UserSummary
 from app.schemas.auth import LoginRequest, TokenResponse, SocketTokenResponse
-from app.schemas.room import RoomCreate, RoomResponse, RoomDetail
-from app.schemas.room_member import RoomMemberResponse
-from app.schemas.message import MessageCreate, MessageResponse, MessagePage
+from app.schemas.seeker import SeekerCreate, SeekerResponse
+from app.schemas.seance import SeanceCreate, SeanceResponse, SeanceDetail
+from app.schemas.presence import PresenceResponse, OwnPresenceResponse
+from app.schemas.whisper import WhisperCreate, WhisperResponse, WhisperPage
+
+__all__ = [
+    "LoginRequest",
+    "TokenResponse",
+    "SocketTokenResponse",
+    "SeekerCreate",
+    "SeekerResponse",
+    "SeanceCreate",
+    "SeanceResponse",
+    "SeanceDetail",
+    "PresenceResponse",
+    "OwnPresenceResponse",
+    "WhisperCreate",
+    "WhisperResponse",
+    "WhisperPage",
+]

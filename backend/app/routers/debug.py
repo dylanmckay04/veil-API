@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+
 from app.core.config import settings
 from app.core.security import ALGORITHM
 
@@ -12,10 +13,14 @@ http_bearer = HTTPBearer()
 def inspect_token(
     credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
 ):
+    """Decode an access token and report what the server sees.
+
+    Intended for local debugging only — do not enable in production.
+    """
     token = credentials.credentials
     secret = settings.SECRET_KEY
 
-    result = {
+    result: dict = {
         "token_preview": token[:30] + "...",
         "secret_key_preview": secret[:6] + "..." if secret else "EMPTY OR MISSING",
         "secret_key_length": len(secret) if secret else 0,

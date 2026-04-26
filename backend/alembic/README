@@ -1,1 +1,12 @@
 Generic single-database configuration.
+
+The four exploratory migrations on `main` (f2cf858fa59b, 00c3bfdb60bf,
+233d6687abde, 0baa9d994af2) have been collapsed into a single
+`0001_initial_schema.py` as part of the rename to seekers/seances/
+presences/whispers. If you have an existing local database that was
+populated with the old chain, drop and recreate it before running
+`alembic upgrade head`:
+
+    docker compose down -v          # wipes the postgres volume
+    docker compose up -d postgres
+    alembic upgrade head

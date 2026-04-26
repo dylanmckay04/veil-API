@@ -1,34 +1,50 @@
 import logging
 import os
 import time
+
 import sqlalchemy
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
 from app.core.limiter import limiter
 from app.database import engine
-from app.routers import auth, rooms, debug
+from app.routers import auth, debug, seances
 
 logger = logging.getLogger(__name__)
 
-def wait_for_db(retries=10, delay=3):
+
+def wait_for_db(retries: int = 10, delay: int = 3) -> None:
     for attempt in range(retries):
         try:
             with engine.connect():
                 logger.info("Database is ready")
                 return
         except sqlalchemy.exc.OperationalError:
-            logger.warning("Database not ready, retrying in %ds... (attempt %d/%d)", delay, attempt + 1, retries)
+            logger.warning(
+                "Database not ready, retrying in %ds... (attempt %d/%d)",
+                delay, attempt + 1, retries,
+            )
             time.sleep(delay)
-    raise Exception("Could not connect to database after multiple retries")         
+    raise Exception("Could not connect to database after multiple retries")
+
 
 if not os.getenv("TESTING"):
-    wait_for_db()   
+    wait_for_db()
 
-app = FastAPI(title="Ouija API", version="0.1.0")
+
+app = FastAPI(
+    title="Ouija API",
+    description=(
+        "A real-time channel for anonymous séances. Seekers open Seances, "
+        "manifest as Presences with ephemeral sigils, and exchange Whispers "
+        "across the veil."
+    ),
+    version="0.2.0",
+)
 
 
 def custom_openapi():
@@ -37,6 +53,7 @@ def custom_openapi():
     schema = get_openapi(
         title=app.title,
         version=app.version,
+        description=app.description,
         routes=app.routes,
     )
     schema.setdefault("components", {})["securitySchemes"] = {
@@ -53,6 +70,7 @@ def custom_openapi():
     app.openapi_schema = schema
     return schema
 
+
 app.openapi = custom_openapi
 
 app.state.limiter = limiter
@@ -66,20 +84,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled exception:: %s %s", request.method, request.url)
     return JSONResponse(
         status_code=500,
-        content={"detail": "An unexpected error occurred"}
+        content={"detail": "An unexpected error occurred"},
     )
-    
 
-@app.get("/health")
+
+@app.get("/health", tags=["meta"])
 def health_check():
     return {"status": "ok"}
 
 
 app.include_router(auth.router)
-app.include_router(rooms.router)
+app.include_router(seances.router)
 app.include_router(debug.router)
