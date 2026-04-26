@@ -22,7 +22,7 @@ class Presence(Base):
     """
 
     __tablename__ = "presences"
-    __table_args__ = (UniqueConstraint("seance_id", "sigil", name="uq_presence_seance_sigil")) # one sigil may not appear twice within the same seance
+    __table_args__ = (UniqueConstraint("seance_id", "sigil", name="uq_presence_seance_sigil"),) # one sigil may not appear twice within the same seance
 
     seeker_id = Column(Integer, ForeignKey("seekers.id", ondelete="CASCADE"), primary_key=True)
     seance_id = Column(Integer, ForeignKey("seances.id", ondelete="CASCADE"), primary_key=True)

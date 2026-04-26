@@ -15,7 +15,7 @@ class Whisper(Base):
     """
 
     __tablename__ = "whispers"
-    __table_args__ = (Index("ix_whispers_seance_id_id", "seance_id", "id")) # the chat-history hot path: latest-first within a seance
+    __table_args__ = (Index("ix_whispers_seance_id_id", "seance_id", "id"),) # the chat-history hot path: latest-first within a seance
 
     id = Column(Integer, primary_key=True, index=True)
     content = Column(Text, nullable=False)

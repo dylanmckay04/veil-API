@@ -33,6 +33,7 @@ services:
       redis:
         condition: service_healthy
     environment:
+      HOME: /tmp
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ouijadb}
       REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY:-dev-only-change-me-32-bytes-minimum}
