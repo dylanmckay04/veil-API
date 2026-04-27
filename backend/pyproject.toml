@@ -1,8 +1,11 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ouija-api"
 version = "0.4.0"
 description = "A real-time web chat service using FastAPI with WebSockets."
-readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
@@ -34,6 +37,11 @@ test = [
     "websockets>=16.0",
     "fakeredis[aioredis]>=2.26.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["tests*", "alembic*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

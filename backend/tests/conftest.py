@@ -32,6 +32,15 @@ import fakeredis.aioredis as fake_aioredis
 import app.services.redis as _redis_module
 
 _fake_redis = fake_aioredis.FakeRedis(decode_responses=True)
+
+# Patch eval method since fakeredis doesn't support Lua script evaluation in async mode
+# For testing, we'll always allow the token bucket (return 1 = token consumed)
+async def _mock_eval(script, numkeys, *args):
+    """Mock eval that simulates the token bucket Lua script behavior."""
+    # For testing, always return 1 (token consumed, not rate-limited)
+    return 1
+
+_fake_redis.eval = _mock_eval
 _redis_module.redis_client = _fake_redis  # type: ignore[assignment]
 
 from app.database import Base

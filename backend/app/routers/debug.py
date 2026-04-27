@@ -3,7 +3,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
 from app.core.config import settings
+from app.core.dependencies import get_current_seeker
 from app.core.security import ALGORITHM
+from app.models.seeker import Seeker
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 http_bearer = HTTPBearer()
@@ -35,3 +37,12 @@ def inspect_token(
         result["error"] = str(e)
 
     return result
+
+
+@router.get("/me")
+def get_current_seeker_info(seeker: Seeker = Depends(get_current_seeker)):
+    """Return the current seeker's ID and email.
+    
+    Intended for local debugging only — do not enable in production.
+    """
+    return {"id": seeker.id, "email": seeker.email}
