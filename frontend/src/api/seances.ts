@@ -1,4 +1,4 @@
-import { del, get, post } from './client'
+import { del, get, post } from './client.js'
 import type {
   OwnPresenceResponse,
   PresenceResponse,
@@ -6,7 +6,7 @@ import type {
   SeanceDetail,
   SeanceResponse,
   WhisperPage,
-} from './types'
+} from './types.js'
 
 export const listSeances = (token: string) =>
   get<SeanceResponse[]>('/seances', token)

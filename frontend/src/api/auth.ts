@@ -1,5 +1,5 @@
-import { post } from './client'
-import type { LoginRequest, SeekerCreate, SeekerResponse, SocketTokenResponse, TokenResponse } from './types'
+import { post } from './client.js'
+import type { LoginRequest, SeekerCreate, SeekerResponse, SocketTokenResponse, TokenResponse } from './types.js'
 
 export const register = (body: SeekerCreate) =>
   post<SeekerResponse>('/auth/register', body)
