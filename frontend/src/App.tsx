@@ -1,4 +1,5 @@
-import { BrowserRouter, Navigate, Route, Routes, type ReactNode } from 'react-router-dom'
+import { type ReactNode } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './store/auth'
 import LoginPage    from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
