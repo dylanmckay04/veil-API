@@ -1,6 +1,8 @@
+import asyncio
 import logging
 import os
 import time
+from contextlib import asynccontextmanager
 
 import sqlalchemy
 from fastapi import FastAPI, Request
@@ -12,6 +14,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.limiter import limiter
 from app.database import engine
+from app.realtime.hub import start_subscriber
 from app.routers import auth, debug, seances, whispers, ws
 
 logger = logging.getLogger(__name__)
@@ -36,6 +39,20 @@ if not os.getenv("TESTING"):
     wait_for_db()
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start the Redis pub/sub subscriber on boot; cancel it on shutdown."""
+    task = asyncio.create_task(start_subscriber())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
 app = FastAPI(
     title="Ouija API",
     description=(
@@ -43,7 +60,8 @@ app = FastAPI(
         "manifest as Presences with ephemeral sigils, and exchange Whispers "
         "across the veil."
     ),
-    version="0.2.0",
+    version="0.3.0",
+    lifespan=lifespan,
 )
 
 
