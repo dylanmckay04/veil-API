@@ -204,3 +204,24 @@ def dissolve_seance(seance_id: int, current_seeker: Seeker, db: Session) -> None
     _require_warden(seance, current_seeker.id, db)
     db.delete(seance)
     db.commit()
+
+
+
+def get_own_presence(
+    seance_id: int,
+    current_seeker: Seeker,
+    db: Session,
+) -> Presence:
+    """Return the caller's own Presence in *seance_id*, or 404 if not present.
+
+    Used by clients to recover their sigil after a page refresh without
+    having to call ``enter_seance`` again (which would 409).
+    """
+    _get_seance_or_404(seance_id, db)
+    presence = _get_presence(seance_id, current_seeker.id, db)
+    if presence is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You are not present in this seance.",
+        )
+    return presence

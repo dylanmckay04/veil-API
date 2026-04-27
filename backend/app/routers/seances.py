@@ -103,3 +103,25 @@ async def dissolve_seance(
     # clients receive {"op":"dissolve"} and can redirect gracefully.
     await hub.broadcast(seance_id, {"op": "dissolve"})
     seance_service.dissolve_seance(seance_id, current_seeker, db)
+
+
+@router.get("/{seance_id}/presences/me", response_model=OwnPresenceResponse)
+@limiter.limit("60/minute")
+async def get_own_presence(
+    request: Request,
+    seance_id: int,
+    db: Session = Depends(get_db),
+    current_seeker: Seeker = Depends(get_current_seeker),
+):
+    """Recover the caller's own Presence without re-entering.
+
+    Returns 404 if the caller has no Presence in this seance. Intended for
+    page-refresh recovery: try POST /enter first; on 409, call this.
+    """
+    presence = seance_service.get_own_presence(seance_id, current_seeker, db)
+    return OwnPresenceResponse(
+        sigil=presence.sigil,
+        role=presence.role,
+        entered_at=presence.entered_at,
+        seance_id=presence.seance_id,
+    )
