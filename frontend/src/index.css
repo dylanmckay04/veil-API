@@ -584,3 +584,25 @@ body::after {
 ::-webkit-scrollbar-track { background: transparent }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted) }
+
+/* ── Redaction ────────────────────────────────────────────────────────────── */
+.whisper-row.is-redacted { opacity: 0.5 }
+.whisper-withdrawn {
+  font-style: italic;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.redact-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  padding: 0 4px;
+  transition: color 0.15s, opacity 0.15s;
+  line-height: 1;
+}
+.whisper-row:hover .redact-btn { opacity: 1 }
+.redact-btn:hover { color: var(--danger) }

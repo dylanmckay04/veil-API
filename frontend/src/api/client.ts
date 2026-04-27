@@ -47,3 +47,6 @@ export const post = <T>(path: string, body?: unknown, token?: string | null) =>
 
 export const del  = <T>(path: string, token?: string | null) =>
   request<T>('DELETE', path, undefined, token)
+
+export const patch = <T>(path: string, body?: unknown, token?: string | null) =>
+  request<T>('PATCH', path, body, token)
