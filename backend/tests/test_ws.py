@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from httpx_ws import aconnect_ws
 
 from app.main import app
