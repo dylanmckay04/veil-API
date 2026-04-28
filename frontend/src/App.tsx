@@ -6,6 +6,7 @@ import LoginPage    from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import LobbyPage    from './pages/LobbyPage'
 import RoomPage     from './pages/RoomPage'
+import InvitePage   from './pages/InvitePage'
 
 function Protected({ children }: { children: ReactNode }) {
   const { token } = useAuth()
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/register"    element={<RegisterPage />} />
           <Route path="/lobby"       element={<Protected><LobbyPage /></Protected>} />
           <Route path="/seances/:id" element={<Protected><RoomPage /></Protected>} />
+          <Route path="/invite"      element={<InvitePage />} />
           <Route path="*"            element={<Navigate to="/lobby" replace />} />
         </Routes>
       </BrowserRouter>

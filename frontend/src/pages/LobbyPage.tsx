@@ -57,7 +57,6 @@ export default function LobbyPage() {
   }
 
   const enterSeance = (s: SeanceResponse) => {
-    if (s.is_sealed) return
     navigate(`/seances/${s.id}`)
   }
 
@@ -146,9 +145,9 @@ export default function LobbyPage() {
                   className={`seance-card${s.is_sealed ? ' sealed' : ''}`}
                   onClick={() => enterSeance(s)}
                   role="button"
-                  tabIndex={s.is_sealed ? -1 : 0}
+                  tabIndex={0}
                   onKeyDown={e => e.key === 'Enter' && enterSeance(s)}
-                  title={s.is_sealed ? 'This séance is sealed' : undefined}
+                  title={s.is_sealed ? 'This séance is sealed — invitation only' : undefined}
                 >
                   <div className="seance-card-name">
                     <span dangerouslySetInnerHTML={nameSeal(s.name)} />

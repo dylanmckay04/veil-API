@@ -19,7 +19,13 @@ export default function LoginPage() {
     try {
       const { access_token } = await login({ email, password })
       setToken(access_token)
-      navigate('/lobby', { replace: true })
+      const pending = sessionStorage.getItem('pendingInviteToken')
+      if (pending) {
+        sessionStorage.removeItem('pendingInviteToken')
+        navigate(`/invite?token=${encodeURIComponent(pending)}`, { replace: true })
+      } else {
+        navigate('/lobby', { replace: true })
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'The veil refused you.')
     } finally {
