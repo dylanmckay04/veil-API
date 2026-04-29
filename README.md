@@ -125,7 +125,7 @@ The codebase uses a consistent vocabulary throughout:
 | `Operator` | Authenticated user account |
 | `Channel` | A chat room; can be public or `is_encrypted` (cipher-key-only) |
 | `Contact` | An Operator's current membership in a Channel; carries an anonymous `callsign` |
-| `Callsign` | Randomly-generated in-channel pseudonym (e.g. *"Ghost Station"*, *"Signal-and-Null"*) |
+| `Callsign` | Randomly-generated in-channel pseudonym (e.g. *"The Ghost Station"*, *"Signal-and-Null"*) |
 | `Controller` | The Channel creator; a Contact with `role=controller` |
 | `Transmission` | A message posted in a Channel |
 | `Cipher Key` | A single-use JWT granting entry to an encrypted Channel |
@@ -203,7 +203,7 @@ Authentication and contact are verified before the connection is accepted. Auth/
 **Server → All connected clients:**
 
 ```jsonc
-{ "op": "transmission", "id": 42, "channel_id": 1, "callsign": "Ghost Station",
+{ "op": "transmission", "id": 42, "channel_id": 1, "callsign": "The Ghost Station",
   "content": "...", "is_deleted": false, "created_at": "..." }
 
 { "op": "enter",   "callsign": "Signal-and-Null" }
@@ -216,7 +216,7 @@ Authentication and contact are verified before the connection is accepted. Auth/
 **Server → Sender only (error):**
 
 ```jsonc
-{ "op": "error", "detail": "Transmitting too quickly. Slow down." }
+{ "op": "error", "detail": "You are speaking too quickly. Slow down." }
 ```
 
 **Reconnection strategy (client):** Exponential backoff — `500ms × 2ⁿ`, capped at 30 seconds, maximum 8 retries. On each reconnect the client requests a new socket token and backfills missed transmissions using the highest transmission ID seen before disconnect. Close codes `4001`/`4003` suppress reconnection entirely.
@@ -541,7 +541,7 @@ cd backend
 TESTING=1 uv run pytest
 
 # Run a specific file
-TESTING=1 uv run pytest tests/test_channels.py
+TESTING=1 uv run pytest tests/test_seances.py
 
 # Run a single test
 TESTING=1 uv run pytest tests/test_ws.py::test_transmission_rate_limit
@@ -549,8 +549,8 @@ TESTING=1 uv run pytest tests/test_ws.py::test_transmission_rate_limit
 
 Test coverage spans:
 - **Auth** (`test_auth.py`) — registration, login, duplicate email, bad credentials, socket token lifecycle
-- **Channels** (`test_channels.py`) — CRUD, encrypted access control, controller operations, cipher key flow
-- **Transmissions** (`test_transmissions.py`) — pagination, soft-delete, redaction permissions
+- **Channels** (`test_seances.py`) — CRUD, encrypted access control, controller operations, cipher key flow
+- **Transmissions** (`test_whispers.py`) — pagination, soft-delete, redaction permissions
 - **WebSocket** (`test_ws.py`) — connection auth, message protocol, rate limiting, contact broadcasting
 
 ---
@@ -570,8 +570,8 @@ static-API/
 │   ├── tests/
 │   │   ├── conftest.py
 │   │   ├── test_auth.py
-│   │   ├── test_channels.py
-│   │   ├── test_transmissions.py
+│   │   ├── test_seances.py
+│   │   ├── test_whispers.py
 │   │   └── test_ws.py
 │   └── app/
 │       ├── main.py              # App factory, lifespan, CORS, startup
