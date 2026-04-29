@@ -47,8 +47,8 @@ async def _prune_expired_transmissions() -> None:
     Runs every 60 seconds. Only touches channels with transmission_ttl_seconds set.
     Each pruning pass is wrapped in its own DB session so failures don't leak.
     """
-    from backend.app.models.channel import Channel
-    from backend.app.models.transmission import Transmission
+    from app.models.channel import Channel
+    from app.models.transmission import Transmission
     import sqlalchemy as sa
 
     while True:
