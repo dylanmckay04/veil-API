@@ -4,7 +4,7 @@
 
 Static is a full-stack chat platform where operators communicate over named channels under randomly-generated callsigns. No usernames appear inside a channel — only the callsign assigned when you tuned in. Leave and re-enter, and you broadcast under a new identity entirely.
 
-Built to demonstrate production-grade backend patterns: WebSocket fan-out over Redis pub/sub, dual-token JWT authentication, per-user rate limiting via Redis Lua scripts, one-time-use socket tokens, and a soft-deleted audit trail — all behind a purpose-built shortwave-radio UI.
+Built to demonstrate production-grade backend patterns: WebSocket fan-out over Redis pub/sub, dual-token JWT authentication, GitHub OAuth with account linking, per-user rate limiting via Redis Lua scripts, one-time-use socket tokens, and a soft-deleted audit trail — all behind a purpose-built shortwave-radio UI.
 
 ---
 
@@ -36,6 +36,7 @@ Built to demonstrate production-grade backend patterns: WebSocket fan-out over R
 
 | Feature | Description |
 |---------|-------------|
+| **GitHub OAuth** | Sign up or sign in with GitHub; existing email accounts are linked automatically |
 | **Channels** | Public or encrypted (cipher-key-only) chat rooms |
 | **Ephemeral Callsigns** | Random pseudonyms per channel entry — identity resets on re-entry |
 | **Real-time Messaging** | WebSocket with exponential backoff reconnection and backfill |
@@ -58,6 +59,7 @@ Built to demonstrate production-grade backend patterns: WebSocket fan-out over R
 - [python-jose](https://github.com/mpdavis/python-jose) - JWT (HS256)
 - [bcrypt](https://pypi.org/project/bcrypt/) - password hashing (with SHA-256 pre-hash)
 - [slowapi](https://github.com/laurentS/slowapi) - HTTP rate limiting
+- [httpx](https://www.python-httpx.org/) - async HTTP client for GitHub OAuth API calls
 - [uv](https://github.com/astral-sh/uv) - fast Python package manager
 - Python 3.13
 
@@ -89,12 +91,15 @@ Built to demonstrate production-grade backend patterns: WebSocket fan-out over R
 │                      FastAPI (port 8000)                        │
 │                                                                 │
 │  routers/auth.py          POST /auth/register, /login           │
+│                           GET  /auth/github                     │
+│                           POST /auth/github/callback            │
 │  routers/channels.py      CRUD + controller controls            │
 │  routers/transmissions.py POST, GET, DELETE /transmissions      │
 │  routers/cipher_keys.py   POST /cipher-keys, POST /channels/join│
 │  routers/ws.py            WS  /ws/channels/{id}?token=...       │
 │                                                                 │
 │  services/                Business logic layer                  │
+│  services/github_service.py  OAuth state, code exchange, linking│
 │  core/security.py         JWT (access / socket / cipher tokens) │
 │  realtime/hub.py          WebSocket registry + Redis fan-out    │
 └──────┬────────────────────────────┬─────────────────────────────┘
@@ -105,8 +110,8 @@ Built to demonstrate production-grade backend patterns: WebSocket fan-out over R
 │  operators      │        │  socket_jti:{jti}   (60s TTL)        │
 │  channels       │        │  channel:{id}       (pub/sub channel)│
 │  contacts       │        │  wsbucket:{c}:{o}   (token bucket)   │
-│  transmissions  │        └──────────────────────────────────────┘
-│  cipher_keys    │
+│  transmissions  │        │  github_state:{state} (10m TTL)      │
+│  cipher_keys    │        └──────────────────────────────────────┘
 └─────────────────┘
 ```
 
@@ -143,10 +148,30 @@ realtime/    WebSocket hub (local registry + Redis pub/sub)
 
 ### Authentication & Security
 
-Static uses **three distinct JWT token types**, each with different lifetimes and purposes:
+Static uses **three distinct JWT token types**, each with different lifetimes and purposes, plus **GitHub OAuth** for passwordless sign-up and sign-in.
+
+#### GitHub OAuth
+
+Operators can create an account or sign in using GitHub. The flow is handled by `services/github_service.py`:
+
+1. **Initiate** — `GET /auth/github` generates a cryptographically random state token, stores it in Redis with a 10-minute TTL, and returns a GitHub authorization URL.
+2. **Redirect** — The client navigates to GitHub's authorization page (scope: `user:email`).
+3. **Callback** — GitHub redirects to the frontend at `/auth/callback?code=...&state=...`. The frontend POSTs these to `POST /auth/github/callback`.
+4. **State validation** — The server atomically deletes the state from Redis (`GETDEL`). An absent or mismatched state is rejected.
+5. **Code exchange** — The server exchanges the code for a GitHub access token.
+6. **User fetch** — The server calls `/user` (and `/user/emails` as a fallback for private emails) to obtain the verified primary email and GitHub user ID.
+7. **Account linking** — Three-way lookup:
+   - Existing Operator with this `github_id` → return it.
+   - Existing Operator with this email → link `github_id` to that account, return it.
+   - No match → create a new Operator with `github_id` and email (no password set).
+8. **Token issuance** — A standard 24-hour JWT access token is returned to the client.
+
+Accounts created via GitHub have a `NULL` `hashed_password`. They can only authenticate via GitHub OAuth.
+
+The frontend preserves any pending cipher key (stored in `sessionStorage`) through the OAuth redirect so that encrypted-channel invitations survive the login flow.
 
 #### Access Token (24h)
-Standard Bearer token for all HTTP endpoints. Issued on login, stored in `localStorage`. The `type` claim is validated on every decode — a cipher or socket token cannot be replayed as an access token.
+Standard Bearer token for all HTTP endpoints. Issued on login or OAuth callback, stored in `localStorage`. The `type` claim is validated on every decode — a cipher or socket token cannot be replayed as an access token.
 
 ```
 POST /auth/login  →  { access_token: "eyJ..." }
@@ -227,6 +252,8 @@ Two independent layers of rate limiting:
 
 **HTTP (slowapi)** — per-IP, per-endpoint limits enforced at the router layer. Examples:
 - `POST /auth/login` — 20/minute
+- `GET /auth/github` — 20/minute
+- `POST /auth/github/callback` — 20/minute
 - `POST /channels/{id}/enter` — 30/minute
 - `GET /channels` — 60/minute
 
@@ -266,8 +293,10 @@ await hub.broadcast(channel_id, {"op": "transmission", ...})
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/auth/register` | — | Create a new Operator account |
-| `POST` | `/auth/login` | — | Authenticate and receive an access token |
+| `POST` | `/auth/register` | — | Create a new Operator account (email + password) |
+| `POST` | `/auth/login` | — | Authenticate with email/password; receive an access token |
+| `GET` | `/auth/github` | — | Initiate GitHub OAuth; returns authorization URL and state token |
+| `POST` | `/auth/github/callback` | — | Exchange GitHub code + state for a JWT access token |
 | `POST` | `/auth/socket-token` | Bearer | Mint a one-time 60s WebSocket token |
 
 </details>
@@ -348,6 +377,19 @@ interface AuthState {
 
 Token is persisted under the key `static:token`. All API calls thread the token as a parameter rather than pulling from a global store, making data flow explicit and testable.
 
+### Pages
+
+| Route | Component | Auth Required | Description |
+|-------|-----------|:-------------:|-------------|
+| `/login` | `LoginPage` | No | Email/password login or "Sign in with GitHub" |
+| `/register` | `RegisterPage` | No | Email/password registration or "Continue with GitHub" |
+| `/auth/callback` | `GitHubCallbackPage` | No | GitHub OAuth callback — exchanges code for JWT |
+| `/lobby` | `LobbyPage` | Yes | Channel browser; create new channels |
+| `/channels/:id` | `RoomPage` | Yes | Live channel messaging interface |
+| `/invite` | `InvitePage` | Optional* | Join an encrypted channel via cipher key |
+
+*`InvitePage` stores the token in `sessionStorage` and redirects to `/login` if unauthenticated, restoring the pending invite after sign-in completes (including via GitHub OAuth).
+
 ### WebSocket Hook
 
 `src/lib/useChannelSocket.ts` encapsulates the full WebSocket lifecycle:
@@ -404,7 +446,8 @@ All sound is off by default and toggled per-session. The approach eliminates CDN
 operators
   id              SERIAL PK
   email           VARCHAR(255) UNIQUE NOT NULL
-  hashed_password VARCHAR(255) NOT NULL
+  hashed_password VARCHAR(255)        -- NULL for GitHub-only accounts
+  github_id       VARCHAR(64) UNIQUE  -- NULL for password-only accounts
   created_at      TIMESTAMP (server default)
 
 channels
@@ -446,6 +489,7 @@ cipher_keys
 ```
 
 **Key design decisions:**
+- **Nullable `hashed_password`** — operators created via GitHub OAuth have no password; they authenticate exclusively through the OAuth flow
 - **Composite PK on contacts** — `(operator_id, channel_id)` enforces one active contact per operator per channel at the database level
 - **Callsign snapshotted on transmissions** — preserves message attribution even after a contact is deleted (operator departs)
 - **Soft-delete on transmissions** — `deleted_at` instead of hard `DELETE`; content is replaced with a sentinel string in API responses but the row is retained for audit
@@ -464,7 +508,8 @@ cd static-API
 
 # Copy and configure environment variables
 cp backend/.env.example backend/.env
-# Edit backend/.env - set SECRET_KEY at minimum
+# Edit backend/.env — set SECRET_KEY at minimum;
+# add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET to enable OAuth
 
 # Start all services (Postgres, Redis, API, Frontend)
 docker compose up --build
@@ -488,7 +533,7 @@ uv sync
 
 # Configure environment
 cp .env.example .env
-# Edit .env with DATABASE_URL, REDIS_URL, SECRET_KEY
+# Edit .env with DATABASE_URL, REDIS_URL, SECRET_KEY (and optionally GitHub OAuth vars)
 
 # Apply migrations
 uv run alembic upgrade head
@@ -515,6 +560,11 @@ npm run dev
 | `DATABASE_URL` | Yes | PostgreSQL DSN — `postgresql://user:pass@host:port/db` |
 | `REDIS_URL` | Yes | Redis DSN — `redis://host:port` |
 | `SECRET_KEY` | Yes | JWT signing key — generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `GITHUB_CLIENT_ID` | No* | GitHub OAuth App client ID |
+| `GITHUB_CLIENT_SECRET` | No* | GitHub OAuth App client secret |
+| `GITHUB_REDIRECT_URI` | No* | OAuth callback URL — must match the GitHub App setting (e.g. `http://localhost:5173/auth/callback`) |
+
+*GitHub OAuth variables are optional — omitting them disables the OAuth sign-in buttons in the UI.
 
 ### Frontend
 
@@ -527,6 +577,13 @@ npm run dev
 | Variable | Effect |
 |----------|--------|
 | `TESTING=1` | Skips `wait_for_db()` on startup; disables HTTP rate limiting |
+
+### Setting up GitHub OAuth
+
+1. Go to **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Set **Authorization callback URL** to `http://localhost:5173/auth/callback` (or your production URL).
+3. Copy the **Client ID** and generate a **Client Secret**.
+4. Add both to `backend/.env` along with the matching `GITHUB_REDIRECT_URI`.
 
 ---
 
@@ -566,7 +623,8 @@ static-API/
 │   │   └── versions/
 │   │       ├── 0001_initial_schema.py
 │   │       ├── 0002_phase4.py
-│   │       └── 0003_rebrand.py
+│   │       ├── 0003_rebrand.py
+│   │       └── 0004_github_oauth.py
 │   ├── tests/
 │   │   ├── conftest.py
 │   │   ├── test_auth.py
@@ -583,7 +641,7 @@ static-API/
 │       │   ├── callsigns.py     # Callsign generator
 │       │   └── limiter.py       # slowapi instance
 │       ├── models/
-│       │   ├── operator.py
+│       │   ├── operator.py      # github_id + nullable hashed_password
 │       │   ├── channel.py
 │       │   ├── contact.py
 │       │   ├── transmission.py
@@ -596,13 +654,14 @@ static-API/
 │       │   └── transmission.py
 │       ├── services/
 │       │   ├── auth_service.py
+│       │   ├── github_service.py    # OAuth state, code exchange, account linking
 │       │   ├── channel_service.py
 │       │   ├── contact_service.py
 │       │   ├── transmission_service.py
 │       │   ├── cipher_key_service.py
 │       │   └── redis.py
 │       ├── routers/
-│       │   ├── auth.py
+│       │   ├── auth.py              # /register, /login, /github, /github/callback
 │       │   ├── channels.py
 │       │   ├── transmissions.py
 │       │   ├── cipher_keys.py
@@ -620,7 +679,7 @@ static-API/
         ├── index.css            # Design tokens, component styles
         ├── api/
         │   ├── client.ts        # fetch wrapper, ApiError class
-        │   ├── auth.ts
+        │   ├── auth.ts          # register, login, githubLogin, githubCallback
         │   ├── channels.ts
         │   └── types.ts         # TypeScript interfaces + WsMessage discriminated union
         ├── store/
@@ -634,6 +693,7 @@ static-API/
         └── pages/
             ├── LoginPage.tsx
             ├── RegisterPage.tsx
+            ├── GitHubCallbackPage.tsx   # OAuth callback handler
             ├── LobbyPage.tsx
             ├── RoomPage.tsx
             └── InvitePage.tsx
