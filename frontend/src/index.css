@@ -181,6 +181,13 @@ body::after {
 }
 .auth-link a { color: var(--accent); text-decoration: none }
 .auth-link a:hover { text-decoration: underline }
+.auth-divider {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  font-style: italic;
+}
 
 /* ── Lobby ───────────────────────────────────────────────────────────────── */
 .lobby-layout {

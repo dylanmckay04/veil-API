@@ -1,5 +1,5 @@
-import { post } from './client.js'
-import type { LoginRequest, OperatorCreate, OperatorResponse, SocketTokenResponse, TokenResponse } from './types.js'
+import { get, post } from './client.js'
+import type { GitHubLoginURLResponse, LoginRequest, OperatorCreate, OperatorResponse, SocketTokenResponse, TokenResponse } from './types.js'
 
 export const register = (body: OperatorCreate) =>
   post<OperatorResponse>('/auth/register', body)
@@ -10,3 +10,9 @@ export const login = (body: LoginRequest) =>
 /** Mint a one-shot socket token. Must be consumed immediately — 60 s TTL. */
 export const getSocketToken = (token: string) =>
   post<SocketTokenResponse>('/auth/socket-token', undefined, token)
+
+export const getGithubLoginUrl = () =>
+  get<GitHubLoginURLResponse>('/auth/github')
+
+export const githubCallback = (body: { code: string; state: string }) =>
+  post<TokenResponse>('/auth/github/callback', body)

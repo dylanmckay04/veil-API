@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login } from '../api/auth'
+import { getGithubLoginUrl, login } from '../api/auth'
 import { ApiError } from '../api/client'
 import { useAuth } from '../store/auth'
 
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
+  const [ghLoading, setGhLoading] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -33,6 +34,18 @@ export default function LoginPage() {
     }
   }
 
+  const handleGithubLogin = async () => {
+    setError(null)
+    setGhLoading(true)
+    try {
+      const { url } = await getGithubLoginUrl()
+      window.location.href = url
+    } catch {
+      setError('Could not reach GitHub. Try again.')
+      setGhLoading(false)
+    }
+  }
+
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -50,10 +63,20 @@ export default function LoginPage() {
             required
           />
           {error && <p className="error-msg">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <button className="btn btn-primary" type="submit" disabled={loading || ghLoading}>
             {loading ? 'Authenticating…' : 'Enter'}
           </button>
         </form>
+        <div className="auth-divider">— or —</div>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          style={{ width: '100%' }}
+          onClick={handleGithubLogin}
+          disabled={ghLoading || loading}
+        >
+          {ghLoading ? 'Redirecting…' : 'Sign in with GitHub'}
+        </button>
         <p className="auth-link">
           No account? <Link to="/register">Register</Link>
         </p>

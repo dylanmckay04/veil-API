@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login, register } from '../api/auth'
+import { getGithubLoginUrl, login, register } from '../api/auth'
 import { ApiError } from '../api/client'
 import { useAuth } from '../store/auth'
 
@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
+  const [ghLoading, setGhLoading] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -25,6 +26,18 @@ export default function RegisterPage() {
       setError(err instanceof ApiError ? err.message : 'Registration failed. Try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGithubLogin = async () => {
+    setError(null)
+    setGhLoading(true)
+    try {
+      const { url } = await getGithubLoginUrl()
+      window.location.href = url
+    } catch {
+      setError('Could not reach GitHub. Try again.')
+      setGhLoading(false)
     }
   }
 
@@ -45,10 +58,20 @@ export default function RegisterPage() {
             required minLength={8}
           />
           {error && <p className="error-msg">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <button className="btn btn-primary" type="submit" disabled={loading || ghLoading}>
             {loading ? 'Registering…' : 'Register'}
           </button>
         </form>
+        <div className="auth-divider">— or —</div>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          style={{ width: '100%' }}
+          onClick={handleGithubLogin}
+          disabled={ghLoading || loading}
+        >
+          {ghLoading ? 'Redirecting…' : 'Continue with GitHub'}
+        </button>
         <p className="auth-link">
           Already registered? <Link to="/login">Sign in</Link>
         </p>
