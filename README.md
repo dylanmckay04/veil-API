@@ -1,3 +1,10 @@
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+
+![uv](https://img.shields.io/badge/uv-000000?style=for-the-badge&logo=python&logoColor=white)
+
+
 # Static
 
 **Anonymous, real-time messaging through ephemeral callsigns.**
