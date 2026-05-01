@@ -7,7 +7,8 @@ import RegisterPage       from './pages/RegisterPage'
 import LobbyPage          from './pages/LobbyPage'
 import RoomPage           from './pages/RoomPage'
 import InvitePage         from './pages/InvitePage'
-import GitHubCallbackPage from './pages/GitHubCallbackPage'
+import GitHubCallbackPage  from './pages/GitHubCallbackPage'
+import GoogleCallbackPage  from './pages/GoogleCallbackPage'
 
 function Protected({ children }: { children: ReactNode }) {
   const { token } = useAuth()
@@ -25,7 +26,8 @@ export default function App() {
           <Route path="/lobby"       element={<Protected><LobbyPage /></Protected>} />
           <Route path="/channels/:id" element={<Protected><RoomPage /></Protected>} />
           <Route path="/invite"        element={<InvitePage />} />
-          <Route path="/auth/callback" element={<GitHubCallbackPage />} />
+          <Route path="/auth/callback"        element={<GitHubCallbackPage />} />
+          <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
           <Route path="*"              element={<Navigate to="/lobby" replace />} />
         </Routes>
       </BrowserRouter>

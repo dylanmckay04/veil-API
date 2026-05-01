@@ -5,6 +5,11 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "paths": {
+        "@/*": ["./src/*"]
+    },
+    "moduleResolution": "bundler",
+    "module": "esnext",
   }
 }

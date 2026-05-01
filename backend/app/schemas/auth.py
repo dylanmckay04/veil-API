@@ -26,3 +26,13 @@ class GitHubLoginURLResponse(BaseModel):
 class GitHubCallbackRequest(BaseModel):
     code: str
     state: str
+
+
+class GoogleLoginURLResponse(BaseModel):
+    url: str
+    state: str
+
+
+class GoogleCallbackRequest(BaseModel):
+    code: str
+    state: str

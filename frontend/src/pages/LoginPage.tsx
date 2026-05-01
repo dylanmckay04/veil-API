@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getGithubLoginUrl, login } from '../api/auth'
+import { getGithubLoginUrl, getGoogleLoginUrl, login } from '../api/auth'
 import { ApiError } from '../api/client'
 import { useAuth } from '../store/auth'
 
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
   const [ghLoading, setGhLoading] = useState(false)
+  const [gLoading,  setGLoading]  = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -46,6 +47,18 @@ export default function LoginPage() {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    setError(null)
+    setGLoading(true)
+    try {
+      const { url } = await getGoogleLoginUrl()
+      window.location.href = url
+    } catch {
+      setError('Could not reach Google. Try again.')
+      setGLoading(false)
+    }
+  }
+
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -63,7 +76,7 @@ export default function LoginPage() {
             required
           />
           {error && <p className="error-msg">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={loading || ghLoading}>
+          <button className="btn btn-primary" type="submit" disabled={loading || ghLoading || gLoading}>
             {loading ? 'Authenticating…' : 'Enter'}
           </button>
         </form>
@@ -73,9 +86,18 @@ export default function LoginPage() {
           className="btn btn-ghost"
           style={{ width: '100%' }}
           onClick={handleGithubLogin}
-          disabled={ghLoading || loading}
+          disabled={ghLoading || gLoading || loading}
         >
           {ghLoading ? 'Redirecting…' : 'Sign in with GitHub'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          style={{ width: '100%' }}
+          onClick={handleGoogleLogin}
+          disabled={gLoading || ghLoading || loading}
+        >
+          {gLoading ? 'Redirecting…' : 'Sign in with Google'}
         </button>
         <p className="auth-link">
           No account? <Link to="/register">Register</Link>

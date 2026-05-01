@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getGithubLoginUrl, login, register } from '../api/auth'
+import { getGithubLoginUrl, getGoogleLoginUrl, login, register } from '../api/auth'
 import { ApiError } from '../api/client'
 import { useAuth } from '../store/auth'
 
@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
   const [ghLoading, setGhLoading] = useState(false)
+  const [gLoading,  setGLoading]  = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -41,6 +42,18 @@ export default function RegisterPage() {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    setError(null)
+    setGLoading(true)
+    try {
+      const { url } = await getGoogleLoginUrl()
+      window.location.href = url
+    } catch {
+      setError('Could not reach Google. Try again.')
+      setGLoading(false)
+    }
+  }
+
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -58,7 +71,7 @@ export default function RegisterPage() {
             required minLength={8}
           />
           {error && <p className="error-msg">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={loading || ghLoading}>
+          <button className="btn btn-primary" type="submit" disabled={loading || ghLoading || gLoading}>
             {loading ? 'Registering…' : 'Register'}
           </button>
         </form>
@@ -68,9 +81,18 @@ export default function RegisterPage() {
           className="btn btn-ghost"
           style={{ width: '100%' }}
           onClick={handleGithubLogin}
-          disabled={ghLoading || loading}
+          disabled={ghLoading || gLoading || loading}
         >
           {ghLoading ? 'Redirecting…' : 'Continue with GitHub'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          style={{ width: '100%' }}
+          onClick={handleGoogleLogin}
+          disabled={gLoading || ghLoading || loading}
+        >
+          {gLoading ? 'Redirecting…' : 'Continue with Google'}
         </button>
         <p className="auth-link">
           Already registered? <Link to="/login">Sign in</Link>

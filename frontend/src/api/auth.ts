@@ -1,5 +1,5 @@
 import { get, post } from './client.js'
-import type { GitHubLoginURLResponse, LoginRequest, OperatorCreate, OperatorResponse, SocketTokenResponse, TokenResponse } from './types.js'
+import type { GitHubLoginURLResponse, GoogleLoginURLResponse, LoginRequest, OperatorCreate, OperatorResponse, SocketTokenResponse, TokenResponse } from './types.js'
 
 export const register = (body: OperatorCreate) =>
   post<OperatorResponse>('/auth/register', body)
@@ -16,3 +16,9 @@ export const getGithubLoginUrl = () =>
 
 export const githubCallback = (body: { code: string; state: string }) =>
   post<TokenResponse>('/auth/github/callback', body)
+
+export const getGoogleLoginUrl = () =>
+  get<GoogleLoginURLResponse>('/auth/google')
+
+export const googleCallback = (body: { code: string; state: string }) =>
+  post<TokenResponse>('/auth/google/callback', body)

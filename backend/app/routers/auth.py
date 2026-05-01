@@ -4,10 +4,11 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_operator, get_db
 from app.core.limiter import limiter
 from app.models.operator import Operator
-from app.schemas.auth import GitHubCallbackRequest, GitHubLoginURLResponse, LoginRequest, SocketTokenResponse, TokenResponse
+from app.schemas.auth import GitHubCallbackRequest, GitHubLoginURLResponse, GoogleCallbackRequest, GoogleLoginURLResponse, LoginRequest, SocketTokenResponse, TokenResponse
 from app.schemas.operator import OperatorCreate, OperatorResponse
 from app.services.auth_service import issue_socket_token, login_operator, register_operator
 from app.services.github_service import generate_github_login_url, github_callback
+from app.services.google_service import generate_google_login_url, google_callback
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -47,6 +48,23 @@ async def github_login_callback(
     db: Session = Depends(get_db),
 ):
     access_token = await github_callback(payload.code, payload.state, db)
+    return TokenResponse(access_token=access_token)
+
+
+@router.get("/google", response_model=GoogleLoginURLResponse)
+@limiter.limit("20/minute")
+async def google_login(request: Request):
+    return await generate_google_login_url()
+
+
+@router.post("/google/callback", response_model=TokenResponse)
+@limiter.limit("20/minute")
+async def google_login_callback(
+    request: Request,
+    payload: GoogleCallbackRequest,
+    db: Session = Depends(get_db),
+):
+    access_token = await google_callback(payload.code, payload.state, db)
     return TokenResponse(access_token=access_token)
 
 
